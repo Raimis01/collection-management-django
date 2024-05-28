@@ -1,0 +1,235 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Albums
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Albums</h1>
+
+        <div class="table-actions">
+            <div class="button-group">
+                <form method="post" id="albumsForm" style="display: inline;">
+                <!-- <form method="post" id="albumsForm"> -->
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_album_id" id="selectedAlbumId">
+                    <button type="submit" name="action" value="save">Save Changes</button>
+                    <button type="submit" name="action" value="delete" id="deleteButton" onclick="return confirm('Are you sure you want to delete record?');">Delete record</button>
+                    <button type="button" onclick="location.href='/collection/album_create/'">Create Album</button>
+                    <button type="button" onclick="location.href='/collection/album_delete/'">Delete Album</button>
+
+                </form>
+            </div>
+
+            
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="albLocId">Album Location ID</option>
+                    <option value="name">Name</option>
+                    <option value="page">Page</option>
+                    <option value="pageRow">Page Row</option>
+                    <option value="pageCol">Page Column</option>
+                    {% if user.is_superuser %}
+                        <option value="ownId">Owner</option>
+                    {% endif %}
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+            
+
+        </div>
+
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Album Location ID</th>
+                        <th>Name</th>
+                        <th>Page</th>
+                        <th>Page Row</th>
+                        <th>Page Column</th>
+                        {% if request.user.is_superuser %}
+                            <th>Owner</th>
+                        {% endif %}
+
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for album in albums %}
+                    <tr class="selectable-row" data-album-id="{{ album.AlbLocId }}" onclick="selectRow(this)">
+
+                        <td>
+                            <input type="hidden" name="album_ids" value="{{ album.AlbLocId }}" form="albumsForm">
+                            <input type="text" name="albumid_{{ album.AlbLocId }}" value="{{ album.AlbLocId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="name_{{ album.AlbLocId }}" value="{{ album.Name }}" form="albumsForm">
+                        </td>
+                        <td>
+                            <input type="text" name="page_{{ album.AlbLocId }}" value="{{ album.Page }}" form="albumsForm">
+                        </td>
+                        <td>
+                            <input type="text" name="pageRow_{{ album.AlbLocId }}" value="{{ album.PageRow }}" form="albumsForm">
+                        </td>
+                        <td>
+                            <input type="text" name="pageCol_{{ album.AlbLocId }}" value="{{ album.PageCol }}" form="albumsForm">
+                        </td>
+                        {% if request.user.is_superuser %}
+                            <td>
+                                <select name="ownId_{{ album.AlbLocId }}" form="albumsForm">
+                                    {% for user in users %}
+                                        <option value="{{ user.username }}" {% if album.OwnId.username == user.username %}selected{% endif %}>
+                                            {{ user.username }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </td>
+                        {% endif %}
+                        
+
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedAlbumIdInput = document.getElementById('selectedAlbumId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedAlbumIdInput.value = rowElement.dataset.albumId;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var selectedColumn = document.getElementById('filterColumn').value;
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                var columnValue = "";
+
+                // Depending on the selected column, fetch the correct field
+                var field;
+                if (selectedColumn === 'albLocId') {
+                    field = row.querySelector(`input[name='albumid_${row.dataset.albumId}']`);
+                } else {
+                    field = row.querySelector(`input[name='${selectedColumn}_${row.dataset.albumId}'], 
+                                                select[name='${selectedColumn}_${row.dataset.albumId}']`);
+                }
+
+                // Extract the value or text from the field
+                if (field) {
+                    if (field.tagName === 'SELECT') {
+                        // For a select element, use the text of the selected option
+                        columnValue = field.options[field.selectedIndex].text.toLowerCase();
+                    } else {
+                        // For inputs (text or readonly), use their value
+                        columnValue = field.value.toLowerCase();
+                    }
+                }
+
+                // Show or hide the row based on filter criteria
+                row.style.display = columnValue.includes(filterValue) ? "" : "none";
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('albumsForm');
+            const deleteButton = document.getElementById('deleteButton');
+            const changedRows = new Set(); // To track modified rows
+
+            // Initialize filtering functionality if elements exist
+            const filterColumn = document.getElementById('filterColumn');
+            const filterValue = document.getElementById('filterValue');
+            if (filterColumn && filterValue) {
+                filterColumn.addEventListener('change', filterTable);
+                filterValue.addEventListener('input', filterTable);
+                filterTable(); // Apply initial filter
+            }
+
+            // Handle form submission by including only changed rows
+            if (form) {
+                form.addEventListener('submit', function(event) {
+                    // Check if the delete button was used without a selected album
+                    if (event.submitter === deleteButton && !form.selected_album_id.value) {
+                        event.preventDefault();
+                        alert('Please select a record to delete.');
+                        return false;
+                    }
+
+                    // Remove any previously added hidden inputs for album_ids
+                    document.querySelectorAll('input[name="album_ids"]').forEach(input => input.remove());
+
+                    // Append only changed rows' IDs as hidden inputs
+                    changedRows.forEach(albumId => {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'album_ids';
+                        hiddenInput.value = albumId;
+                        form.appendChild(hiddenInput);
+                    });
+                });
+
+                // Add event listeners to inputs for unsaved changes indicator
+                document.querySelectorAll('#itemTable input, #itemTable select').forEach(element => {
+                    element.setAttribute('data-original-value', element.value);
+
+                    const eventType = element.type === 'checkbox' || element.tagName === 'SELECT' ? 'change' : 'input';
+                    element.addEventListener(eventType, function() {
+                        const row = this.closest('tr');
+                        const albumId = row.dataset.albumId; // Ensure data-album-id is set correctly in each row
+                        if (this.value !== this.getAttribute('data-original-value')) {
+                            addUnsavedIndicator(row);
+                            changedRows.add(albumId);
+                        } else {
+                            // Check all inputs in the row to decide if the row should still be marked as changed
+                            const allInputsReverted = Array.from(row.querySelectorAll('input, select')).every(
+                                el => el.value === el.getAttribute('data-original-value')
+                            );
+                            if (allInputsReverted) {
+                                removeUnsavedIndicator(row);
+                                changedRows.delete(albumId);
+                            }
+                        }
+                    });
+                });
+
+                // Reset the form to clear any unintended modifications upon reload
+                form.reset();
+            }
+        });
+
+
+    </script>
+{% endblock %}

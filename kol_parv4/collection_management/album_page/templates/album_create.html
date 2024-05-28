@@ -1,0 +1,19 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Create album
+{% endblock %}
+
+{% block content %}
+    <div class="mycard">
+        <h1>Create album</h1>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Submit</button>
+
+        </form>
+
+    </div>
+{% endblock %}

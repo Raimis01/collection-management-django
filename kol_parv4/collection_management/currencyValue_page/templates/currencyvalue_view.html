@@ -1,0 +1,196 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Currency Values
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Currency Values</h1>
+
+        <div class="table-actions">
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <form method="post" id="currencyvalueForm" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_currencyvalue_id" id="selectedCurrencyvalueId">
+                        <button type="submit" name="action" value="save">Save Changes</button>
+                        <button type="submit" name="action" value="delete" id="deleteButton">Delete Selected Value</button>
+                        <button type="button" id="addButton">Add New Value</button>
+                    </form>
+                </div>
+            {% endif %}
+
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="Values">Values</option>
+
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+            
+        </div>
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for currencyvalue in currencyvalues %}
+                    <tr class="selectable-row" data-currencyvalue-id="{{ currencyvalue.CurrValueId }}" onclick="selectRow(this)">
+
+                        <td>
+                            <input type="hidden" name="original_currencyvalue_ids" value="{{ currencyvalue.CurrValueId }}" form="currencyvalueForm">
+                            <input type="text" name="updated_currencyvalue_ids_{{ currencyvalue.CurrValueId }}" value="{{ currencyvalue.CurrValueId }}" {% if not user.is_superuser %} readonly {% endif %} form="currencyvalueForm">
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedCurrencyvalueIdInput = document.getElementById('selectedCurrencyvalueId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedCurrencyvalueIdInput.value = rowElement.dataset.currencyvalueId;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                // Find the visible input element for status in each row
+                var statusInput = row.querySelector('td input[type="text"]');
+                var statusValue = statusInput ? statusInput.value.toLowerCase() : '';
+
+                // Show or hide row based on filter criteria
+                row.style.display = statusValue.includes(filterValue) ? "" : "none";
+            });
+            
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+    const form = document.getElementById('currencyvalueForm');
+    const deleteButton = document.getElementById('deleteButton');
+    const addButton = document.getElementById('addButton'); // Assuming addButton exists
+    const filterValue = document.getElementById('filterValue');
+    const changedRows = new Set(); // To track modified rows
+
+    // Initialize table filtering if the filter element exists
+    if (filterValue) {
+        filterValue.addEventListener('input', filterTable);
+        filterTable();  // Initialize table with no filter applied
+    }
+
+    // Handle form submission safely
+    if (form) {
+        form.onsubmit = function(event) {
+            if (event.submitter === deleteButton && form.selected_currencyvalue_id.value === '') {
+                event.preventDefault();
+                alert('Please select a value to delete.');
+                return false;
+            }
+            // Remove any previously added hidden inputs for condition_ids
+            document.querySelectorAll('input[name="original_currencyvalue_ids"]').forEach(input => input.remove());
+
+            // Append only changed rows' IDs as hidden inputs
+            changedRows.forEach(currencyvalueId => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'original_currencyvalue_ids';
+                hiddenInput.value = currencyvalueId;
+                form.appendChild(hiddenInput);
+            });
+        };
+
+        // Attach event listeners to text inputs for unsaved changes indicator
+        document.querySelectorAll('#itemTable input[type="text"]').forEach(input => {
+            input.setAttribute('data-original-value', input.value);
+            input.addEventListener('input', function() {
+                if (this.value !== this.getAttribute('data-original-value')) {
+                    addUnsavedIndicator(this.closest('tr'));
+                } else {
+                    removeUnsavedIndicator(this.closest('tr'));
+                }
+            });
+        });
+
+        // Attach event listeners to inputs for unsaved changes indicator
+        document.querySelectorAll('#itemTable input[type="text"]').forEach(input => {
+            const row = input.closest('tr');
+            const currencyvalueId = row.dataset.currencyvalueId; // Ensure data-condition-id is set correctly in each row
+            input.setAttribute('data-original-value', input.value);
+            
+            input.addEventListener('input', function() {
+                if (this.value !== this.getAttribute('data-original-value')) {
+                    addUnsavedIndicator(row);
+                    changedRows.add(currencyvalueId);
+                } else {
+                    const allInputsReverted = Array.from(row.querySelectorAll('input[type="text"]')).every(
+                        el => el.value === el.getAttribute('data-original-value')
+                    );
+                    if (allInputsReverted) {
+                        removeUnsavedIndicator(row);
+                        changedRows.delete(currencyvalueId);
+                    }
+                }
+            });
+        });
+
+        // Reset the form
+        form.reset();
+    }
+
+    // Attach event listener to 'Add' button
+    // var addButton = document.getElementById('addButton');
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            var table = document.getElementById('itemTable').getElementsByTagName('tbody')[0];
+            var newRow = table.insertRow(0);
+            newRow.className = 'selectable-row';
+            var newCell = newRow.insertCell();
+            newCell.innerHTML = '<input type="text" name="new_currencyvalue" form="currencyvalueForm">';
+
+            addUnsavedIndicator(newRow, true);
+        });
+    }
+});
+
+
+    </script>
+
+
+
+{% endblock %}

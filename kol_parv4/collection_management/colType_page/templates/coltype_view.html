@@ -1,0 +1,183 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Collection Types
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Collection Types</h1>
+
+        <div class="table-actions">
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <form method="post" id="coltypeForm" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_coltype_id" id="selectedColtypeId">
+                        <button type="submit" name="action" value="save">Save Changes</button>
+                        <button type="submit" name="action" value="delete" id="deleteButton">Delete Selected Type</button>
+                        <button type="button" id="addButton">Add New Type</button>
+                    </form>
+                </div>
+            {% endif %}
+            
+
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="Status">Status</option>
+
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+
+        </div>
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Collection Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coltype in coltypes %}
+                    <tr class="selectable-row" data-coltype-id="{{ coltype.id }}" onclick="selectRow(this)">
+
+                        <td>
+                            <input type="hidden" name="coltype_ids" value="{{ coltype.id }}" form="coltypeForm">
+                            <input type="text" name="coltype_{{ coltype.id }}" value="{{ coltype.ColType }}" {% if not user.is_superuser %} readonly {% endif %} form="coltypeForm">
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedColtypeIdInput = document.getElementById('selectedColtypeId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedColtypeIdInput.value = rowElement.dataset.coltypeId;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                // Find the visible input element for status in each row
+                var statusInput = row.querySelector('td input[type="text"]');
+                var statusValue = statusInput ? statusInput.value.toLowerCase() : '';
+
+                // Show or hide row based on filter criteria
+                row.style.display = statusValue.includes(filterValue) ? "" : "none";
+            });
+            
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('coltypeForm');
+    const deleteButton = document.getElementById('deleteButton');
+    const addButton = document.getElementById('addButton');
+    const filterValue = document.getElementById('filterValue');
+    const changedRows = new Set(); // To track modified rows
+
+    // Initialize filtering functionality if elements exist
+    if (filterValue) {
+        filterValue.addEventListener('input', filterTable);
+        filterTable();  // Initialize table with no filter applied
+    }
+
+    // Handle form submission by including only changed or selected rows
+    if (form) {
+        form.onsubmit = function(event) {
+            if (event.submitter === deleteButton && !form.selected_coltype_id.value) {
+                event.preventDefault();
+                alert('Please select a type to delete.');
+                return false;
+            }
+
+            // Remove any previously added hidden inputs for coltype_ids
+            document.querySelectorAll('input[name="coltype_ids"]').forEach(input => input.remove());
+
+            // Append only changed rows' IDs as hidden inputs
+            changedRows.forEach(coltypeId => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'coltype_ids';
+                hiddenInput.value = coltypeId;
+                form.appendChild(hiddenInput);
+            });
+        };
+
+        // Add event listeners to inputs for unsaved changes indicator
+        document.querySelectorAll('#itemTable input[type="text"]').forEach(input => {
+            const row = input.closest('tr');
+            const coltypeId = row.dataset.coltypeId; // Ensure data-coltype-id is set correctly in each row
+            input.setAttribute('data-original-value', input.value);
+
+            input.addEventListener('input', function() {
+                if (this.value !== this.getAttribute('data-original-value')) {
+                    addUnsavedIndicator(row);
+                    changedRows.add(coltypeId);
+                } else {
+                    // Check all inputs in the row to decide if the row should still be marked as changed
+                    const allInputsReverted = Array.from(row.querySelectorAll('input[type="text"]')).every(
+                        el => el.value === el.getAttribute('data-original-value')
+                    );
+                    if (allInputsReverted) {
+                        removeUnsavedIndicator(row);
+                        changedRows.delete(coltypeId);
+                    }
+                }
+            });
+        });
+
+        // Reset the form to clear any unintended modifications upon reload
+        form.reset();
+    }
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            var table = document.getElementById('itemTable').getElementsByTagName('tbody')[0];
+            var newRow = table.insertRow(0);
+            newRow.className = 'selectable-row';
+            var newCell = newRow.insertCell();
+            newCell.innerHTML = '<input type="text" name="new_coltype" form="coltypeForm">';
+
+            addUnsavedIndicator(newRow, true);
+        });
+    }
+});
+
+
+    </script>
+
+
+
+{% endblock %}

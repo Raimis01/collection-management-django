@@ -1,0 +1,37 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Item Photos
+{% endblock %}
+
+
+{% block content %}
+<div class="mycard">
+    <h1>Photos for Collection Item: {{ collectable }}</h1>
+
+    <div class="upload-section">
+        <h2>Upload New Photo</h2>
+        <form method="post" enctype="multipart/form-data" class="photo-upload-form">
+            {% csrf_token %}
+            <div class="form-group">
+                {{ form.as_p }}
+            </div>
+            <button type="submit" class="button">Upload Photo</button>
+        </form>
+    </div>
+
+    <div class="photo-gallery">
+        <h2>Existing Photos</h2>
+        <div class="grid">
+            {% for photo in photos %}
+                <div class="photo-item">
+                    <img src="{{ photo.Photo.url }}" alt="Collection Item Photo" class="photo-image">
+                    <div class="button-group">
+                        <a href="{% url 'photo_delete' photo.id %}" class="button delete-button">Delete</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

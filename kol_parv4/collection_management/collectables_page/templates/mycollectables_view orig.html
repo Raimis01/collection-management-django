@@ -1,0 +1,328 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Collectables
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Collectables</h1>
+
+        <div class="table-actions">
+            <div class="button-group">
+                <form method="post" id="collectablesForm" style="display: inline;">
+                <!-- <form method="post" id="collectablesForm"> -->
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_col_id" id="selectedColId">
+                    <button type="submit" name="action" value="save">Save Changes</button>
+                    <button type="submit" name="action" value="delete" id="deleteButton" onclick="return confirm('Are you sure you want to delete record?');">Delete record</button>
+                    <button type="button" onclick="location.href='/collection/collectable_insert/'">Insert item</button>
+                    <!-- Inside your <div class="table-actions"> after other buttons -->
+                    <button type="button" id="seePhotosButton" onclick="seePhotos()" disabled>See Photos</button>
+                    <button type="button" id="seePricesButton" onclick="seePrices()" disabled>See Prices</button>
+
+                </form>
+            </div>
+
+            <!-- works -->
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="ColId">Collectable ID</option>
+                    <option value="name">Name</option>
+                    <option value="country">Country</option>
+                    <option value="description">Description</option>
+                    <option value="year">Year</option>
+                    <option value="condition">Condition</option>
+                    <option value="status">Status</option>
+                    <option value="material">Material</option>
+                    <option value="colType">ColType</option>
+                    <option value="currValue">CurrValue</option>
+                    <option value="currType">CurrType</option>
+                    <option value="albLoc">AlbLoc</option>
+                    <option value="price">Price</option>
+                    {% if request.user.is_superuser %}
+                        <option value="owner">Owner</option>
+                    {% endif %}
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+            
+
+        </div>
+
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Collectable ID</th>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th>Description</th>
+                        <th>Year</th>
+                        <th>Condition</th>
+                        <th>Status</th>
+                        <th>Material</th>
+                        <th>ColType</th>
+                        <th>CurrValue</th>
+                        <th>CurrType</th>
+                        <th>AlbLoc</th>
+                        <th>Price</th>
+                        <th>Owner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                
+                    {% include '_collectables_rows.html' %}
+
+                </tbody>
+            </table>
+            <div id="sentinel"></div>
+        </div>
+
+    </div>     
+        
+    <!-- <script src="collectables.js"></script>  -->
+
+    <script>
+
+        function selectRow(rowElement) {
+            const selectedColIdInput = document.getElementById('selectedColId');
+            const currentlySelected = document.querySelector('.selected');
+            const seePhotosButton = document.getElementById('seePhotosButton');
+            const seePricesButton = document.getElementById('seePricesButton');
+    
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+    
+            rowElement.classList.add('selected');
+            selectedColIdInput.value = rowElement.dataset.colId;
+    
+            seePhotosButton.disabled = false;
+            seePricesButton.disabled = false;
+        }
+    
+        function seePhotos() {
+            const selectedColId = document.getElementById('selectedColId').value;
+            if (selectedColId) {
+                location.href = `/collection/mycollectables/photosedit/${selectedColId}/`;
+            }
+        } 
+    
+        function seePrices() {
+            const selectedColId = document.getElementById('selectedColId').value;
+            if (selectedColId) {
+                location.href = `/collection/collectables/itemprices/${selectedColId}/`;
+            }
+        } 
+    
+        function addUnsavedIndicator(rowElement) {
+            removeUnsavedIndicator(rowElement);
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+            rowElement.appendChild(indicator);
+        }
+    
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('collectablesForm');
+        const deleteButton = document.getElementById('deleteButton');
+        const changedRows = new Set();
+
+        if (form) {
+            form.onsubmit = function(event) {
+                if (event.submitter === deleteButton && !document.getElementById('selectedColId').value) {
+                    event.preventDefault();
+                    alert('Please select an item to delete.');
+                    return false;
+                }
+
+                document.querySelectorAll('input[name="col_ids"]').forEach(input => input.remove());
+
+                changedRows.forEach(colId => {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'col_ids';
+                    hiddenInput.value = colId;
+                    form.appendChild(hiddenInput);
+                });
+            };
+
+            document.querySelectorAll('#itemTable input, #itemTable select').forEach(element => {
+                element.setAttribute('data-original-value', element.value);
+                element.addEventListener(element.type === 'checkbox' || element.tagName === 'SELECT' ? 'change' : 'input', function() {
+                    const row = this.closest('tr');
+                    if (this.value !== this.getAttribute('data-original-value')) {
+                        addUnsavedIndicator(row);
+                        changedRows.add(row.dataset.colId);
+                    } else {
+                        removeUnsavedIndicator(row);
+                        if (!Array.from(row.querySelectorAll('input, select')).some(el => el.value !== el.getAttribute('data-original-value'))) {
+                            changedRows.delete(row.dataset.colId);
+                        }
+                    }
+                });
+            });
+
+            form.reset();
+        }
+    });
+
+
+    
+        //works
+        function filterTable() {
+            // Start timing
+            const startTime = performance.now();
+
+            const selectedColumn = document.getElementById('filterColumn').value;
+            const filterValue = document.getElementById('filterValue').value.toLowerCase();
+            const tableRows = document.querySelectorAll('#itemTable tbody tr');
+    
+            tableRows.forEach(row => {
+                let columnValue = "";
+    
+                if (selectedColumn === 'ColId') {
+                    const field = row.querySelector(`input[name='colId_${row.dataset.colId}']`);
+                    columnValue = field ? field.value.toLowerCase() : "";
+                } else {
+                    const selectField = row.querySelector(`select[name='${selectedColumn}_${row.dataset.colId}']`);
+                    const inputField = row.querySelector(`input[name='${selectedColumn}_${row.dataset.colId}']`);
+                    if (selectField) {
+                        columnValue = selectField.options[selectField.selectedIndex].text.toLowerCase();
+                    } else if (inputField) {
+                        columnValue = inputField.value.toLowerCase();
+                    }
+                }
+    
+                row.style.display = columnValue.includes(filterValue) ? "" : "none";
+            });
+
+                // End timing
+                const endTime = performance.now();
+
+            // Calculate and log the total time taken
+            const elapsedTime = endTime - startTime;
+            console.log(`Total time taken to filter the table: ${elapsedTime.toFixed(2)} milliseconds`);
+
+        }
+
+        //works
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('collectablesForm');
+            const deleteButton = document.getElementById('deleteButton');
+            const filterColumn = document.getElementById('filterColumn');
+            const filterValue = document.getElementById('filterValue');
+            const changedRows = new Set();
+
+
+            if (filterColumn && filterValue) {
+                filterColumn.addEventListener('change', filterTable);
+                filterValue.addEventListener('input', filterTable);
+                filterTable();
+            }
+
+            if (form) {
+                // form.addEventListener('submit', function(event) {
+                form.onsubmit = function(event) {
+
+                    if (event.submitter === deleteButton && !document.getElementById('selectedColId').value) {
+                        event.preventDefault();
+                        alert('Please select an item to delete.');
+                        return false;
+                    }
+
+                    // Clear existing hidden inputs for col_ids to prevent duplicates
+                    document.querySelectorAll('input[name="col_ids"]').forEach(input => input.remove());
+
+                    // Append only changed rows' IDs to form data
+                    changedRows.forEach(colId => {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'col_ids';
+                        hiddenInput.value = colId;
+                        form.appendChild(hiddenInput);
+                    });
+
+                };    
+                // });
+
+                document.querySelectorAll('#itemTable input, #itemTable select').forEach(element => {
+                    element.setAttribute('data-original-value', element.value);
+                    element.addEventListener(element.type === 'checkbox' || element.tagName === 'SELECT' ? 'change' : 'input', function() {
+                        const row = this.closest('tr');
+                        if (this.value !== this.getAttribute('data-original-value')) {
+                            addUnsavedIndicator(row);
+                            changedRows.add(row.dataset.colId);
+                        } else {
+                            removeUnsavedIndicator(row);
+                            // Re-evaluate if row should still be marked as changed
+                            if (!Array.from(row.querySelectorAll('input, select')).some(el => el.value !== el.getAttribute('data-original-value'))) {
+                                changedRows.delete(row.dataset.colId);
+                            }
+                        }
+                    });
+                });
+
+                form.reset();
+
+            }
+        });
+
+
+        //works
+        document.addEventListener('DOMContentLoaded', function() {
+            const tableBody = document.querySelector('#itemTable tbody');
+            let inFlight = false;
+            let nextPage = 1; // Start with the assumption you are on page 1 initially.
+            let lastContent = '';
+
+            const observer = new IntersectionObserver(entries => {
+                if (entries[0].isIntersecting && !inFlight) {
+                    inFlight = true;
+                    let nextPageUrl = new URL(window.location.href);
+                    nextPageUrl.searchParams.set('page', nextPage);
+
+                    fetch(nextPageUrl)
+                        .then(response => response.text())
+                        .then(html => {
+                            const parser = new DOMParser();
+                            const doc = parser.parseFromString(html, 'text/html');
+                            const newRows = doc.querySelector('tbody').innerHTML;
+                            if (newRows.trim() && newRows !== lastContent) {
+                                tableBody.insertAdjacentHTML('beforeend', newRows);
+                                nextPage++; // Increment only after successfully adding new rows
+                                lastContent = newRows;
+                            } else {
+                                // No new or different rows to add, stop observing
+                                observer.disconnect();
+                            }
+                            inFlight = false;
+                        })
+                        .catch(error => {
+                            console.error('Error fetching data:', error);
+                            inFlight = false;
+                        });
+                }
+            }, { rootMargin: '100px' });
+
+            const sentinel = document.createElement('div');
+            sentinel.style.height = '1px';
+            document.querySelector('.table-container').appendChild(sentinel);
+            observer.observe(sentinel);
+        });
+
+
+</script>
+
+{% endblock %}

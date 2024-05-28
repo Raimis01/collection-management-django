@@ -1,0 +1,20 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Register
+{% endblock %}
+
+{% block content %}
+    <div class="mycard">
+        <h1>Register</h1>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Submit</button>
+
+        </form>
+
+        <!-- <p> <a href="/artgal/user_view">Back to user list</a></p> -->
+    </div>
+{% endblock %}

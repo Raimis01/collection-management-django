@@ -1,0 +1,129 @@
+{% extends "master.html" %}
+
+{% block title %}
+    ItemPrices
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Prices for Collection Item: {{ collectable }}</h1>
+
+        <div class="table-actions">
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <form method="post" id="itempriceForm" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_price_id" id="selectedpriceId">
+
+                    </form>
+                </div>
+            {% endif %}
+
+            
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="colId">ColId</option>
+                    <option value="price">Price</option>
+                    <option value="transdate">TransDate</option>
+                
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+            
+
+        </div>
+
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>ColId</th>
+                        <th>Price</th>
+                        <th>TransDate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for itemprice in itemprices %}
+
+                    <tr class="selectable-row" data-itemprice-id="{{ itemprice.id }}" onclick="selectRow(this)">
+                        <!-- <td>
+                            <input type="hidden" name="price_ids" value="{{ itemprice.id }}" form="itempriceForm">
+                            <input type="text" name="colId_{{ itemprice.id }}" value="{{ ownercol.ColId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="price_{{ itemprice.id }}" value="{{ ownercol.Price }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="transdate_{{ itemprice.id }}" value="{{ ownercol.TransDate }}" readonly>
+                        </td> -->
+
+                        <td>
+                            <input type="hidden" name="price_ids" value="{{ itemprice.id }}" form="ownercolForm">
+                            <input type="text" name="colId_{{ itemprice.id }}" value="{{ collectable.ColId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="price_{{ itemprice.id }}" value="{{ itemprice.Price }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="transdate_{{ itemprice.id }}" value="{{ itemprice.TransDate }}" readonly>
+                        </td>
+                        
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedpriceIdInput = document.getElementById('selectedpriceId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedpriceIdInput.value = rowElement.dataset.ownercolId;
+        }
+
+
+        function filterTable() {
+            var selectedColumn = document.getElementById('filterColumn').value;
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                var columnValue = row.querySelector(`input[name='${selectedColumn}_${row.dataset.ownercolId}']`).value.toLowerCase();
+                
+                // Show or hide the row based on filter criteria
+                row.style.display = columnValue.includes(filterValue) ? "" : "none";
+            });
+        }
+
+
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var filterColumn = document.getElementById('filterColumn');
+            var filterValue = document.getElementById('filterValue');
+
+            // Safely add event listeners for filter functionality
+            if (filterColumn && filterValue) {
+                filterColumn.addEventListener('change', filterTable);
+                filterValue.addEventListener('input', filterTable);
+
+                // Initialize table with no filter applied
+                filterTable();
+            }
+        });
+
+
+    </script>
+{% endblock %}

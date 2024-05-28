@@ -1,0 +1,123 @@
+<!-- _collectables_rows.html -->
+{% for collectable in collectables %}
+
+    <tr class="selectable-row" data-col-id="{{ collectable.ColId }}" onclick="selectRow(this)">
+        <td>
+            <input type="hidden" name="col_ids" value="{{ collectable.ColId }}" form="collectablesForm">
+            <input type="text" name="colId_{{ collectable.ColId }}" value="{{ collectable.ColId }}" readonly>
+        </td>
+        <td>
+            <input type="text" name="name_{{ collectable.ColId }}" value="{{ collectable.Name }}" form="collectablesForm">
+        </td>
+        <td>
+            <select name="country_{{ collectable.ColId }}" form="collectablesForm">
+                {% for country in countries %}
+                <option value="{{ country.CountryId }}" {% if collectable.Country and country.CountryId == collectable.Country.CountryId %} selected {% endif %}>
+                    {{ country.Name }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <input type="text" name="description_{{ collectable.ColId }}" value="{{ collectable.Description }}" form="collectablesForm">
+        </td>
+        <td>
+            <select name="year_{{ collectable.ColId }}" form="collectablesForm">
+                {% for year in years %}
+                <option value="{{ year.YearId }}" {% if collectable.Year and year.YearId == collectable.Year.YearId %} selected {% endif %}>
+                    {{ year.YearId }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="condition_{{ collectable.ColId }}" form="collectablesForm">
+                <option value="" {% if not collectable.Condition %} selected {% endif %}>---</option>
+                {% for condition in conditions %}
+                <option value="{{ condition.id }}" {% if collectable.Condition and condition.id == collectable.Condition.id %} selected {% endif %}>
+                    {{ condition.Condition }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="status_{{ collectable.ColId }}" form="collectablesForm">
+                <option value="" {% if not collectable.Status %} selected {% endif %}>---</option>
+                {% for status in statuses %}
+                <option value="{{ status.id }}" {% if collectable.Status and status.id == collectable.Status.id %} selected {% endif %}>
+                    {{ status.Status }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="material_{{ collectable.ColId }}" form="collectablesForm">
+                <option value="" {% if not collectable.Material %} selected {% endif %}>---</option>
+                {% for material in materials %}
+                <option value="{{ material.id }}" {% if collectable.Material and material.id == collectable.Material.id %} selected {% endif %}>
+                    {{ material.Material }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="colType_{{ collectable.ColId }}" form="collectablesForm">
+                {% for colType in colTypes %}
+                <option value="{{ colType.id }}" {% if collectable.ColType and colType.id == collectable.ColType.id %} selected {% endif %}>
+                    {{ colType.ColType }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="currValue_{{ collectable.ColId }}" form="collectablesForm">
+                <option value="" {% if not collectable.CurrValue %} selected {% endif %}>---</option>
+                {% for currValue in currValues %}
+                <option value="{{ currValue.CurrValueId }}" {% if collectable.CurrValue and currValue.CurrValueId == collectable.CurrValue.CurrValueId %} selected {% endif %}>
+                    {{ currValue.CurrValueId }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="currType_{{ collectable.ColId }}" form="collectablesForm">
+                <option value="" {% if not collectable.CurrType %} selected {% endif %}>---</option>
+                {% for currType in currTypes %}
+                <option value="{{ currType.id }}" {% if collectable.CurrType and currType.id == collectable.CurrType.id %} selected {% endif %}>
+                    {{ currType.CurrType }}
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <select name="albLoc_{{ collectable.ColId }}" form="collectablesForm">
+                <option value="" {% if not collectable.AlbLoc %} selected {% endif %}>---</option>
+                {% for albLoc in collectable.available_albums %}
+                    <option value="{{ albLoc.AlbLocId }}" {% if collectable.current_location and albLoc.AlbLocId == collectable.current_location.AlbLocId %}selected{% endif %}>
+                        {{ albLoc.AlbLocId }}
+                    </option>
+                {% endfor %}
+
+            </select>
+        </td>
+
+        <td>
+            <input type="text" name="price_{{ collectable.ColId }}" value="{{ collectable.latest_price }}" form="collectablesForm">
+        </td>
+        
+        <td>
+            {% if request.user.is_superuser %}
+                <select name="owner_{{ collectable.ColId }}" form="collectablesForm">
+                    {% for user in users %}
+                    <option value="{{ user.username }}" {% if collectable.Owner and user.username == collectable.Owner.username %} selected {% endif %}>
+                        {{ user.username }}
+                    </option>
+                    {% endfor %}
+                </select>
+            {% else %}
+                <input type="text" name="owner_{{ collectable.ColId }}" value="{{ collectable.Owner.username}}" readonly>
+            {% endif %}
+        </td>
+    </tr>
+
+{% endfor %}

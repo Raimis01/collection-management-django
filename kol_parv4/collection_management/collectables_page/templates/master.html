@@ -1,0 +1,31 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'myglobal.css' %}">  
+    
+
+</head>
+<body>
+
+    <div class="topnav">
+        <a href="/collection/main" class="nav-link main-menu">Main Menu</a>
+        <div class="auth-links">
+            {% if not request.user.is_authenticated %}
+                <a href="{% url 'login' %}" class="nav-link">Login</a>
+                <a href="{% url 'register' %}" class="nav-link">Register</a>
+            {% else %}
+                <a href="{% url 'logout' %}" class="nav-link">Logout</a>
+            {% endif %}
+        </div>
+    </div>
+    
+    
+
+    {% block content %}
+    {% endblock %}
+
+
+</body>
+</html>

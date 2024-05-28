@@ -1,0 +1,225 @@
+{% extends "master.html" %}
+
+{% block title %}
+    User Details
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>User Details</h1>
+
+        <div class="table-actions">
+            <div class="button-group">
+                <form method="post" id="usersForm" style="display: inline;">
+                <!-- <form method="post" id="usersForm"> -->
+                    {% csrf_token %}
+
+                    <input type="hidden" name="selected_user_username" id="selectedUserUsername">
+                    <button type="submit" name="action" value="save">Save Changes</button>
+                    <button type="submit" name="action" value="delete" id="deleteButton" onclick="return confirm('Are you sure you want to delete user?');">Delete User</button>
+
+                </form>
+            </div>
+
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <select id="filterColumn">
+                        <option value="username">Username</option>
+                        <option value="first_name">First Name</option>
+                        <option value="last_name">Last Name</option>
+                        <option value="email">Email</option>
+                        <option value="telephone">Telephone</option>
+                        <option value="show">Show collection</option>
+                        <option value="is_superuser">Superuser</option>
+                    </select>
+                    <input type="text" id="filterValue" placeholder="Filter value">
+                </div>
+            {% endif %}
+
+        </div>
+
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Username</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Telephone</th>
+                        <th>Show collection</th>
+                        {% if request.user.is_superuser %}
+                            <th>Superuser</th>
+
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <!-- <tr class="selectable-row" data-user-id="{{ user.id }}" onclick="selectRow(this)"> -->
+                    <tr class="selectable-row" data-user-username="{{ user.username }}" onclick="selectRow(this)">
+                            <td>
+                            <!-- <input type="hidden" name="user_ids" value="{{ user.id }}" form="usersForm"> -->
+                            <input type="hidden" name="user_usernames" value="{{ user.username }}" form="usersForm">
+                            <input type="text" name="username_{{ user.username }}" value="{{ user.username }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="first_name_{{ user.username }}" value="{{ user.first_name }}" form="usersForm">
+                        </td>
+                        <td>
+                            <input type="text" name="last_name_{{ user.username }}" value="{{ user.last_name }}" form="usersForm">
+                        </td>
+                        <td>
+                            <input type="email" name="email_{{ user.username }}" value="{{ user.email }}" form="usersForm">
+                        </td>
+                        <td>
+                            <input type="text" name="telephone_{{ user.username }}" value="{{ user.Telephone }}" form="usersForm">
+                        </td>
+                        <td>
+                            <input type="checkbox" name="show_{{ user.username }}" {% if user.Show %}checked{% endif %} form="usersForm">
+
+                        </td>
+                        {% if request.user.is_superuser %}
+                            <td>
+                                <input type="checkbox" name="is_superuser_{{ user.username }}" {% if user.is_superuser %}checked{% endif %} form="usersForm">
+                            </td> 
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedUserUsernameInput = document.getElementById('selectedUserUsername');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedUserUsernameInput.value = rowElement.dataset.userUsername;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var selectedColumn = document.getElementById('filterColumn').value;
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            
+            tableRows.forEach(function(row) {
+                var columnValue = "";
+                if (selectedColumn === 'show' || selectedColumn === 'is_superuser') {
+                    // Handle checkbox columns
+                    var checkbox = row.querySelector(`input[name^='${selectedColumn}']`);
+                    columnValue = checkbox ? (checkbox.checked ? 'true' : 'false') : '';
+                } else {
+                    // Handle text and email inputs
+                    var inputField = row.querySelector(`input[name^='${selectedColumn}']`);
+                    columnValue = inputField ? inputField.value.toLowerCase() : '';
+                }
+
+                // Show or hide row based on filter criteria
+                row.style.display = columnValue.includes(filterValue) ? "" : "none";
+            });
+            
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const form = document.getElementById('usersForm');
+            const deleteButton = document.getElementById('deleteButton');
+            const filterColumn = document.getElementById('filterColumn');
+            const filterValue = document.getElementById('filterValue');
+            const changedRows = new Set();
+
+            if (filterColumn && filterValue) {
+                filterColumn.addEventListener('change', filterTable);
+                filterValue.addEventListener('input', filterTable);
+                filterTable();
+            }
+
+            if (form) {
+                form.onsubmit = function(event) {
+                    if (event.submitter === deleteButton && form.selected_user_username.value === '') {
+                        event.preventDefault();
+                        alert('Please select a user to delete.');
+                        return false;
+                    }
+
+                    // Clear existing hidden inputs for col_ids to prevent duplicates
+                    document.querySelectorAll('input[name="user_usernames"]').forEach(input => input.remove());
+
+                    // Append only changed rows' IDs to form data
+                    changedRows.forEach(userUsername => {
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'user_usernames';
+                        hiddenInput.value = userUsername;
+                        form.appendChild(hiddenInput);
+                    });
+
+                };  
+
+                document.querySelectorAll('#itemTable input').forEach(input => {
+                    const row = input.closest('tr');
+                    const userUsername = row.dataset.userUsername; // Assuming each row has data-username attribute
+
+
+                    if (input.type === 'checkbox') {
+                        input.setAttribute('data-original-checked', input.checked);
+                        input.addEventListener('change', function() {
+                            if (this.checked !== (this.getAttribute('data-original-checked') === 'true')) {
+                                addUnsavedIndicator(row);
+                                changedRows.add(userUsername);
+                            } else if (allInputsReverted(row)) {
+                                removeUnsavedIndicator(row);
+                                changedRows.delete(userUsername);
+                            }
+                        });
+                    } else {
+                        input.setAttribute('data-original-value', input.value);
+                        input.addEventListener('input', function() {
+                            if (this.value !== this.getAttribute('data-original-value')) {
+                                addUnsavedIndicator(row);
+                                changedRows.add(userUsername);
+                            } else if (allInputsReverted(row)) {
+                                removeUnsavedIndicator(row);
+                                changedRows.delete(userUsername);
+                            }
+                        });
+                    }
+
+            
+                });
+
+                // Reset the form only if it exists
+                form.reset();
+            }
+        });
+    </script>
+{% endblock %}

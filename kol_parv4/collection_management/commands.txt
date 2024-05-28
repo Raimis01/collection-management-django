@@ -1,0 +1,12 @@
+pip install django whitenoise django-phonenumber-field phonenumbers Pillow
+
+django-admin startproject xxxx 
+
+python manage.py startapp xxx 
+
+python manage.py runserver
+
+python manage.py makemigrations
+python manage.py migrate
+
+python manage.py collectstatic 

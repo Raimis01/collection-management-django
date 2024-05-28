@@ -1,0 +1,189 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Statuses
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Statuses</h1>
+        
+        <div class="table-actions">
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <form method="post" id="statusesForm" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_status_id" id="selectedStatusId">
+                        <button type="submit" name="action" value="save">Save Changes</button>
+                        <button type="submit" name="action" value="delete" id="deleteButton">Delete Selected Status</button>
+                        <button type="button" id="addButton">Add New Status</button>
+                    </form>
+                </div>
+            {% endif %}
+            
+
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="Status">Status</option>
+
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+
+        </div>
+        
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for status in statuses %}
+                    <tr class="selectable-row" data-status-id="{{ status.id }}" onclick="selectRow(this)">
+
+                        <td>
+                            <input type="hidden" name="status_ids" value="{{ status.id }}" form="statusesForm">
+                            <input type="text" name="status_{{ status.id }}" value="{{ status.Status }}" {% if not user.is_superuser %} readonly {% endif %} form="statusesForm">
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedStatusIdInput = document.getElementById('selectedStatusId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedStatusIdInput.value = rowElement.dataset.statusId;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                // Find the visible input element for status in each row
+                var statusInput = row.querySelector('td input[type="text"]');
+                var statusValue = statusInput ? statusInput.value.toLowerCase() : '';
+
+                // Show or hide row based on filter criteria
+                row.style.display = statusValue.includes(filterValue) ? "" : "none";
+            });
+            
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+
+    const form = document.getElementById('statusesForm');
+    const deleteButton = document.getElementById('deleteButton');
+    const addButton = document.getElementById('addButton'); // Assuming addButton exists
+    const filterValue = document.getElementById('filterValue');
+    const changedRows = new Set(); // To track modified rows
+
+    // Initialize table filtering if the filter element exists
+    if (filterValue) {
+        filterValue.addEventListener('input', filterTable);
+        filterTable();  // Initialize table with no filter applied
+    }
+
+    // Handle form submission safely
+    if (form) {
+        form.onsubmit = function(event) {
+            if (event.submitter === deleteButton && form.selected_status_id.value === '') {
+                event.preventDefault();
+                alert('Please select a status to delete.');
+                return false;
+            }
+        
+            // Remove any previously added hidden inputs for condition_ids
+            document.querySelectorAll('input[name="status_ids"]').forEach(input => input.remove());
+
+            // Append only changed rows' IDs as hidden inputs
+            changedRows.forEach(statusId => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'status_ids';
+                hiddenInput.value = statusId;
+                form.appendChild(hiddenInput);
+            });
+        };
+
+        // Attach event listeners to inputs for unsaved changes indicator
+        document.querySelectorAll('#itemTable input[type="text"]').forEach(input => {
+            const row = input.closest('tr');
+            const statusId = row.dataset.statusId; // Ensure data-condition-id is set correctly in each row
+            input.setAttribute('data-original-value', input.value);
+            
+            input.addEventListener('input', function() {
+                if (this.value !== this.getAttribute('data-original-value')) {
+                    addUnsavedIndicator(row);
+                    changedRows.add(statusId);
+                } else {
+                    const allInputsReverted = Array.from(row.querySelectorAll('input[type="text"]')).every(
+                        el => el.value === el.getAttribute('data-original-value')
+                    );
+                    if (allInputsReverted) {
+                        removeUnsavedIndicator(row);
+                        changedRows.delete(statusId);
+                    }
+                }
+            });
+        });
+
+        // Reset the form
+        form.reset();
+    }
+
+    // Attach event listener to 'Add Status' button
+    // var addButton = document.getElementById('addButton');
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            var table = document.getElementById('itemTable').getElementsByTagName('tbody')[0];
+            var newRow = table.insertRow(0);
+            newRow.className = 'selectable-row';
+            var newCell = newRow.insertCell();
+            newCell.innerHTML = '<input type="text" name="new_status" form="statusesForm">';
+
+            addUnsavedIndicator(newRow, true);
+        });
+    }
+});
+
+
+    </script>
+
+
+
+{% endblock %}

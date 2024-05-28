@@ -1,0 +1,215 @@
+{% extends "master.html" %}
+
+{% block title %}
+    All Collectables
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>All Collectables</h1>
+
+        <div class="table-actions">
+            <div class="button-group">
+                <form method="post" id="collectablesForm" style="display: inline;">
+                    {% csrf_token %}
+                    <input type="hidden" name="selected_col_id" id="selectedColId">
+                    <button type="button" id="seePhotosButton" onclick="seePhotos()" disabled>See Photos</button>
+                    <button type="button" id="seePricesButton" onclick="seePrices()" disabled>See Prices</button>
+
+                </form>
+            </div>
+
+            
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="ColId">Collectable ID</option>
+                    <option value="name">Name</option>
+                    <option value="country">Country</option>
+                    <option value="description">Description</option>
+                    <option value="year">Year</option>
+                    <option value="condition">Condition</option>
+                    <option value="status">Status</option>
+                    <option value="material">Material</option>
+                    <option value="colType">ColType</option>
+                    <option value="currValue">CurrValue</option>
+                    <option value="currType">CurrType</option>
+                    <option value="albLoc">AlbLoc</option>
+                    <option value="price">Price</option>
+                    <option value="owner">Owner</option>
+                
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+            
+
+        </div>
+
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Collectable ID</th>
+                        <th>Name</th>
+                        <th>Country</th>
+                        <th>Description</th>
+                        <th>Year</th>
+                        <th>Condition</th>
+                        <th>Status</th>
+                        <th>Material</th>
+                        <th>ColType</th>
+                        <th>CurrValue</th>
+                        <th>CurrType</th>
+                        <th>AlbLoc</th>
+                        <th>Price</th>
+                        <th>Owner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for collectable in collectables %}
+
+                    <tr class="selectable-row" data-col-id="{{ collectable.ColId }}" onclick="selectRow(this)">
+                        <td>
+                            <input type="hidden" name="col_ids" value="{{ collectable.ColId }}" form="collectablesForm">
+                            <input type="text" name="colId_{{ collectable.ColId }}" value="{{ collectable.ColId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="name_{{ collectable.ColId }}" value="{{ collectable.Name }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="country_{{ collectable.ColId }}" value="{{ collectable.Country.Name }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="description_{{ collectable.ColId }}" value="{{ collectable.Description }}" readonly>
+                        </td>
+
+
+                        <td>
+                            <input type="text" name="year_{{ collectable.ColId }}" value="{{ collectable.Year.YearId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="condition_{{ collectable.ColId }}" value="{{ collectable.Condition.Condition }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="status_{{ collectable.ColId }}" value="{{ collectable.Status.Status }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="material_{{ collectable.ColId }}" value="{{ collectable.Material.Material }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="colType_{{ collectable.ColId }}" value="{{ collectable.ColType.ColType }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="currValue_{{ collectable.ColId }}" value="{{ collectable.CurrValue.CurrValueId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="currType_{{ collectable.ColId }}" value="{{ collectable.CurrType.CurrType }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="albLoc_{{ collectable.ColId }}" value="{{ collectable.AlbLoc.AlbLocId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="price_{{ collectable.ColId }}" value="{{ collectable.latest_price }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="owner_{{ collectable.ColId }}" value="{{ collectable.Owner.username}}" readonly>
+                        </td>
+                        
+                    </tr>
+
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            const selectedColIdInput = document.getElementById('selectedColId');
+            const currentlySelected = document.querySelector('.selected');
+            const seePhotosButton = document.getElementById('seePhotosButton');
+            const seePricesButton = document.getElementById('seePricesButton');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedColIdInput.value = rowElement.dataset.colId;
+
+            seePhotosButton.disabled = false;
+            seePricesButton.disabled = false;
+        }
+
+        function seePhotos() {
+            const selectedColId = document.getElementById('selectedColId').value;
+                if (selectedColId) {
+                    location.href = `/collection/allcollectables/photos/${selectedColId}/`;
+                }
+        } 
+        function seePrices() {
+            const selectedColId = document.getElementById('selectedColId').value;
+            if (selectedColId) {
+                location.href = `/collection/collectables/itemprices/${selectedColId}/`;
+            }
+        } 
+
+
+        function filterTable() {
+            var selectedColumn = document.getElementById('filterColumn').value;
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                var columnValue = "";
+
+                if (selectedColumn === 'ColId') {
+                    // Special handling for the ColId column
+                    var field = row.querySelector(`input[name='colId_${row.dataset.colId}']`);
+                    if (field) {
+                        columnValue = field.value.toLowerCase();
+                    }
+                } else if (['year', 'country', 'condition', 'status', 'material', 'colType', 'currValue', 'currType', 'albLoc', 'owner'].includes(selectedColumn)) {
+                    var selectField = row.querySelector(`select[name='${selectedColumn}_${row.dataset.colId}']`);
+                    var inputField = row.querySelector(`input[name='${selectedColumn}_${row.dataset.colId}']`);
+                    if (selectField) {
+                        columnValue = selectField.options[selectField.selectedIndex].text.toLowerCase();
+                    } else if (inputField) {
+                        columnValue = inputField.value.toLowerCase();
+                    }
+                } else {
+                    // Handling for other input fields
+                    var inputField = row.querySelector(`input[name='${selectedColumn}_${row.dataset.colId}']`);
+                    if (inputField) {
+                        columnValue = inputField.value.toLowerCase();
+                    }
+                }
+
+                // Show or hide the row based on filter criteria
+                row.style.display = columnValue.includes(filterValue) ? "" : "none";
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.getElementById('collectablesForm');
+            var deleteButton = document.getElementById('deleteButton');
+
+            // Safely add event listeners for filter functionality
+            var filterColumn = document.getElementById('filterColumn');
+            var filterValue = document.getElementById('filterValue');
+            if (filterColumn && filterValue) {
+                filterColumn.addEventListener('change', filterTable);
+                filterValue.addEventListener('input', filterTable);
+
+                // Initialize table with no filter applied
+                filterTable();
+            }
+        });
+
+
+    </script>
+{% endblock %}

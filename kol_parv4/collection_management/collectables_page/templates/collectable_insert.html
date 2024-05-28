@@ -1,0 +1,19 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Insert item
+{% endblock %}
+
+{% block content %}
+    <div class="mycard">
+        <h1>Insert item</h1>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Submit</button>
+
+        </form>
+
+    </div>
+{% endblock %}

@@ -1,0 +1,410 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+
+body {
+  margin: 0;
+  font-family: 'Roboto', sans-serif;
+  background-color: #F0F0F0; 
+  color: #333; 
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+
+.topnav {
+  background-color: #4a69bd;
+  color: #ffffff;
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+
+
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-bottom: 1px solid #ddd;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  margin: 0 15px; 
+  font-weight: 500;
+  padding: 8px 16px; 
+  transition: color 0.3s ease; 
+
+  font-family: 'Roboto', sans-serif;
+}
+
+.nav-link:hover, .nav-link:focus {
+  color: #d1d1d1; 
+  background-color: rgba(255, 255, 255, 0.1); 
+  border-radius: 4px; 
+  text-decoration: none; 
+}
+
+
+.nav-link.active {
+  color: #4a90e2;
+  font-weight: 700; 
+}
+
+.main-menu {
+  margin-right: auto; 
+}
+
+.auth-links {
+  display: flex;
+}
+
+.mycard {
+  background-color: #fdfdfd;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #ddd; 
+  display: inline-block; 
+  margin: 20px auto;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+  width: auto; 
+  margin-top: calc(50px + 20px);
+  margin-bottom: 20px; 
+  max-width: calc(100vw - 100px);
+  min-width: 600px;
+  box-sizing: border-box; 
+  position: absolute;
+  top: 10%; 
+  left: 50%; 
+  transform: translate(-50%, -10%); 
+
+  align-items: center; 
+}
+
+.mycard h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 20px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+li {
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: transform 0.25s;
+  border-radius: 5px;
+  box-shadow: 0 5px 7px -1px rgba(51, 51, 51, 0.23);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+li:hover {
+  transform: scale(1.05);
+}
+
+li img {
+  max-width: 80%;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+
+#itemTable {
+  width: 100%; 
+  border-collapse: collapse;
+}
+
+#itemTable th, #itemTable td {
+  border: 1px solid #ddd;
+  padding: 12px;
+  text-align: left;
+  max-width: 150px;
+  min-width: 50px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+.table {
+  width: 100%;
+  max-width: 100%; 
+
+  border-collapse: collapse;
+}
+
+
+.table th, .table td {
+  padding: 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+
+}
+
+.table-actions {
+  display: flex;
+  justify-content: space-between;
+  background: #f8f9fa;
+  padding: 10px;
+  border-bottom: 2px solid #ccc;
+  align-items: center;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  height: 400px;
+  border: 1px solid #dee2e6;
+  position: relative;
+  padding-left: 20px;
+  margin: 20px 30px;
+
+}
+
+
+
+.selected, .selectable-row:hover {
+  background-color: #dfe4ea; 
+  cursor: pointer;
+}
+
+.selectable-row.selected {
+  color: white; 
+  background-color: #6d6e70;
+}
+.selectable-row {
+  position: relative; 
+}
+
+
+.table input[type="text"] {
+  padding: 6px;
+  border: 1px solid #ccc;
+  width: calc(100% - 12px);
+  box-sizing: border-box;
+}
+
+
+
+.unsaved-indicator {
+  height: 10px;
+  width: 10px;
+  background-color: #333;
+  border-radius: 50%;
+  position: absolute;
+  left: -15px;
+  z-index: 10;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.photo-gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.photo-item {
+  flex-basis: calc(33% - 20px);
+  max-width: 300px;
+}
+
+.photo-item img {
+  width: 100%;
+  height: auto;
+  max-width: 300px;
+  max-height: 300px;
+  object-fit: contain;
+}
+
+.filter-container {
+  display: flex;
+  gap: 5px;
+  padding: 8px; 
+  border: 1px solid #ccc; 
+  border-radius: 4px; 
+  margin-right: 5px; 
+  background-color: #f8f9fa; 
+}
+
+.button-group button,
+.button-group select,
+.button-group input[type="text"] {
+  border: none;
+  padding: 10px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.button-group select:hover {
+  background-color: #c4c4c5;
+}
+
+
+
+
+
+.row-container {
+  display: flex;
+  align-items: center;
+}
+
+
+
+.options-container {
+  display: flex;
+  justify-content: space-around; 
+  padding: 20px;
+  background: #ffffff;
+
+  margin: auto;
+  max-width: 960px;
+}
+
+
+.collection-column, .options-column {
+
+  flex: 1; 
+  text-align: center; 
+}
+
+
+h2 {
+  color: #2a2a2a;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e2e2e2;
+}
+
+
+.links-container {
+
+  line-height: 1;
+}
+
+
+a {
+  text-decoration: none;
+  color: #0066cc;
+  transition: color 0.3s;
+  display: block; 
+  margin-bottom: 8px; 
+}
+
+a:last-child {
+  margin-bottom: 0; 
+}
+
+a:hover {
+  color: #003061;
+}
+
+/* @media screen and (max-width: 768px) {
+  .topnav {
+    justify-content: center;
+  }
+  .main-menu {
+    display: none; 
+  }
+  .auth-links .nav-link {
+    margin-right: 10px; 
+  }
+  .mycard, .table-container {
+    width: calc(100% - 20px);
+    margin: 10px;
+  }
+  #itemTable th, #itemTable td {
+    padding: 10px;
+    white-space: normal;
+  }
+} */
+
+
+@media screen and (max-width: 768px) {
+
+  body {
+      font-size: 14px;
+  }
+
+  .topnav {
+      flex-direction: column; 
+      padding: 12px 10px;
+  }
+
+  .nav-link {
+      margin: 8px 5px; 
+      padding: 8px 10px; 
+  }
+
+  .main-menu,
+  .auth-links {
+      flex-direction: column; 
+      align-items: center; 
+      margin: 10px 0; 
+  }
+
+  .mycard {
+      position: static; 
+      width: auto; 
+      max-width: calc(100% - 40px); 
+      min-width: 0; 
+      margin: 20px;
+      transform: none; 
+  }
+
+  ul {
+      flex-direction: column; 
+  }
+
+  li {
+      width: 100%; 
+      margin: 10px 0; 
+  }
+
+  .table-container,
+  #itemTable,
+  .table {
+      width: calc(100% - 20px); 
+  }
+
+  .photo-gallery {
+      flex-direction: column; 
+  }
+
+  .photo-item {
+      flex-basis: 100%; 
+  }
+
+  .options-container {
+      flex-direction: column;
+  }
+
+  .collection-column,
+  .options-column {
+      margin: 10px 0; 
+  }
+
+  .filter-container {
+      flex-wrap: wrap; 
+  }
+
+  .button-group {
+      flex-direction: column; 
+  }
+
+}

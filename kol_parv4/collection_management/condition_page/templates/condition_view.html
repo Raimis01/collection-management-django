@@ -1,0 +1,183 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Conditions
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Conditions</h1>
+
+        <div class="table-actions">
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <form method="post" id="conditionForm" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_condition_id" id="selectedConditionId">
+                        <button type="submit" name="action" value="save">Save Changes</button>
+                        <button type="submit" name="action" value="delete" id="deleteButton">Delete Selected Condition</button>
+                        <button type="button" id="addButton">Add New Condition</button>
+                    </form>
+                </div>
+            {% endif %}
+            
+
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="Condition">Condition</option>
+
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+
+        </div>
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Condition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for condition in conditions %}
+                    <tr class="selectable-row" data-condition-id="{{ condition.id }}" onclick="selectRow(this)">
+
+                        <td>
+                            <input type="hidden" name="condition_ids" value="{{ condition.id }}" form="conditionForm">
+                            <input type="text" name="condition_{{ condition.id }}" value="{{ condition.Condition }}" {% if not user.is_superuser %} readonly {% endif %} form="conditionForm">
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedConditionIdInput = document.getElementById('selectedConditionId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedConditionIdInput.value = rowElement.dataset.conditionId;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                // Find the visible input element for status in each row
+                var statusInput = row.querySelector('td input[type="text"]');
+                var statusValue = statusInput ? statusInput.value.toLowerCase() : '';
+
+                // Show or hide row based on filter criteria
+                row.style.display = statusValue.includes(filterValue) ? "" : "none";
+            });
+            
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('conditionForm');
+    const deleteButton = document.getElementById('deleteButton');
+    const addButton = document.getElementById('addButton'); // Assuming addButton exists
+    const filterValue = document.getElementById('filterValue');
+    const changedRows = new Set(); // To track modified rows
+
+    // Initialize table filtering if the filter element exists
+    if (filterValue) {
+        filterValue.addEventListener('input', filterTable);
+        filterTable();  // Initialize table with no filter applied
+    }
+
+    // Handle form submission
+    if (form) {
+        form.onsubmit = function(event) {
+            if (event.submitter === deleteButton && !form.selected_condition_id.value) {
+                event.preventDefault();
+                alert('Please select a condition to delete.');
+                return false;
+            }
+
+            // Remove any previously added hidden inputs for condition_ids
+            document.querySelectorAll('input[name="condition_ids"]').forEach(input => input.remove());
+
+            // Append only changed rows' IDs as hidden inputs
+            changedRows.forEach(conditionId => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'condition_ids';
+                hiddenInput.value = conditionId;
+                form.appendChild(hiddenInput);
+            });
+        };
+
+        // Attach event listeners to inputs for unsaved changes indicator
+        document.querySelectorAll('#itemTable input[type="text"]').forEach(input => {
+            const row = input.closest('tr');
+            const conditionId = row.dataset.conditionId; // Ensure data-condition-id is set correctly in each row
+            input.setAttribute('data-original-value', input.value);
+            
+            input.addEventListener('input', function() {
+                if (this.value !== this.getAttribute('data-original-value')) {
+                    addUnsavedIndicator(row);
+                    changedRows.add(conditionId);
+                } else {
+                    const allInputsReverted = Array.from(row.querySelectorAll('input[type="text"]')).every(
+                        el => el.value === el.getAttribute('data-original-value')
+                    );
+                    if (allInputsReverted) {
+                        removeUnsavedIndicator(row);
+                        changedRows.delete(conditionId);
+                    }
+                }
+            });
+        });
+
+        // Reset the form to clear any unintended modifications upon reload
+        form.reset();
+    }
+    if (addButton) {
+        addButton.addEventListener('click', function() {
+            var table = document.getElementById('itemTable').getElementsByTagName('tbody')[0];
+            var newRow = table.insertRow(0);
+            newRow.className = 'selectable-row';
+            var newCell = newRow.insertCell();
+            newCell.innerHTML = '<input type="text" name="new_condition" form="conditionForm">';
+
+            addUnsavedIndicator(newRow, true);
+        });
+    }
+});
+
+
+    </script>
+
+
+
+{% endblock %}

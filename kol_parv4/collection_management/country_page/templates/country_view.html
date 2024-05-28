@@ -1,0 +1,214 @@
+{% extends "master.html" %}
+
+{% block title %}
+    Countries
+{% endblock %}
+
+{% block content %}
+
+    <div class="mycard">
+        <h1>Countries</h1>
+
+        <div class="table-actions">
+            {% if user.is_superuser %}
+                <div class="button-group">
+                    <form method="post" id="countryForm" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="selected_country_id" id="selectedCountryId">
+                        <button type="submit" name="action" value="save">Save Changes</button>
+                        <button type="submit" name="action" value="delete" id="deleteButton">Delete Selected Type</button>
+                        <button type="button" id="addButton">Add New Country</button>
+                    </form>
+                </div>
+            {% endif %}
+            
+
+            <div class="button-group">
+                <select id="filterColumn">
+                    <option value="CountryId">Country Id</option>
+                    <option value="Name">Name</option>
+                </select>
+                <input type="text" id="filterValue" placeholder="Filter value">
+            </div>
+
+        </div>
+
+        <div class="table-container">
+            <table id="itemTable" class="table">
+                <thead>
+                    <tr>
+                        <th>Country Id</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for country in countries %}
+                    <tr class="selectable-row" data-country-id="{{ country.CountryId }}" onclick="selectRow(this)">
+
+                        <td>
+                            <input type="hidden" name="country_ids" value="{{ country.CountryId }}" form="countryForm">
+                            <input type="text" name="country_id_{{ country.CountryId }}" value="{{ country.CountryId }}" readonly>
+                        </td>
+                        <td>
+                            <input type="text" name="countryName_{{ country.CountryId }}" value="{{ country.Name }}" {% if not user.is_superuser %} readonly {% endif %} form="countryForm">
+                        </td>
+
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function selectRow(rowElement) {
+            var selectedCountryIdInput = document.getElementById('selectedCountryId');
+            var currentlySelected = document.querySelector('.selected');
+
+            if (currentlySelected) {
+                currentlySelected.classList.remove('selected');
+            }
+
+            rowElement.classList.add('selected');
+            selectedCountryIdInput.value = rowElement.dataset.countryId;
+        }
+
+        function addUnsavedIndicator(rowElement, isNewRow = false) {
+            removeUnsavedIndicator(rowElement);
+
+            let indicator = document.createElement('div');
+            indicator.className = 'unsaved-indicator';
+
+            rowElement.appendChild(indicator);
+
+        }
+
+        function removeUnsavedIndicator(rowElement) {
+            let indicator = rowElement.querySelector('.unsaved-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function filterTable() {
+            var selectedColumn = document.getElementById('filterColumn').value;
+            var filterValue = document.getElementById('filterValue').value.toLowerCase();
+            var tableRows = document.querySelectorAll('#itemTable tbody tr');
+
+            tableRows.forEach(function(row) {
+                var columnIndex = selectedColumn === 'CountryId' ? 0 : 1; // Index: 0 for Country Id, 1 for Name
+                var inputField = row.cells[columnIndex].querySelector('input[type="text"]');
+                var cellValue = inputField ? inputField.value.toLowerCase() : '';
+
+
+                // Show or hide row based on filter criteria
+                row.style.display = cellValue.includes(filterValue) ? "" : "none";
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('countryForm');
+    const deleteButton = document.getElementById('deleteButton');
+    const changedRows = new Set(); // To track modified rows
+
+    // Setup filtering functionality
+    const filterColumn = document.getElementById('filterColumn');
+    const filterValue = document.getElementById('filterValue');
+    if (filterColumn && filterValue) {
+        filterColumn.addEventListener('change', filterTable);
+        filterValue.addEventListener('input', filterTable);
+        filterTable(); // Apply initial filter
+    }
+
+    // Handle form submission
+    if (form) {
+        form.addEventListener('submit', function(event) {
+            if (event.submitter === deleteButton && !form.selected_country_id.value) {
+                event.preventDefault();
+                alert('Please select a country to delete.');
+                return false;
+            }
+
+            // Remove any previously added hidden inputs for country_ids
+            document.querySelectorAll('input[name="country_ids"]').forEach(input => input.remove());
+
+            // Append only changed rows' IDs as hidden inputs
+            changedRows.forEach(countryId => {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'country_ids';
+                hiddenInput.value = countryId;
+                form.appendChild(hiddenInput);
+            });
+        });
+
+        // Attach event listeners to inputs for unsaved changes indicator
+        document.querySelectorAll('#itemTable input').forEach(input => {
+            const row = input.closest('tr');
+            const countryId = row.dataset.countryId; // Ensure data-country-id is set correctly in each row
+
+            if (input.type !== 'checkbox') {
+                input.setAttribute('data-original-value', input.value);
+                input.addEventListener('input', function() {
+                    if (this.value !== this.getAttribute('data-original-value')) {
+                        addUnsavedIndicator(row);
+                        changedRows.add(countryId);
+                    } else {
+                        removeUnsavedIndicator(row);
+                        if (Array.from(row.querySelectorAll('input')).every(el => 
+                            (el.type !== 'checkbox' && el.value === el.getAttribute('data-original-value')) ||
+                            (el.type === 'checkbox' && el.checked.toString() === el.getAttribute('data-original-checked'))
+                        )) {
+                            changedRows.delete(countryId);
+                        }
+                    }
+                });
+            } else {
+                input.setAttribute('data-original-checked', input.checked.toString());
+                input.addEventListener('change', function() {
+                    if (this.checked.toString() !== this.getAttribute('data-original-checked')) {
+                        addUnsavedIndicator(row);
+                        changedRows.add(countryId);
+                    } else {
+                        removeUnsavedIndicator(row);
+                        if (Array.from(row.querySelectorAll('input')).every(el => 
+                            (el.type !== 'checkbox' && el.value === el.getAttribute('data-original-value')) ||
+                            (el.type === 'checkbox' && el.checked.toString() === el.getAttribute('data-original-checked'))
+                        )) {
+                            changedRows.delete(countryId);
+                        }
+                    }
+                });
+            }
+        });
+
+                // Reset the form only if it exists
+                form.reset();
+            }
+
+            // Attach event listener to 'Add' button
+            var addButton = document.getElementById('addButton');
+            if (addButton) {
+                addButton.addEventListener('click', function() {
+                    var table = document.getElementById('itemTable').getElementsByTagName('tbody')[0];
+                    var newRow = table.insertRow(0); // Inserts a new row at the top of the table
+                    newRow.className = 'selectable-row';
+
+                    // Create Country ID cell with input
+                    var idCell = newRow.insertCell(0);
+                    idCell.innerHTML = '<input type="text" name="new_countryid" form="countryForm">';
+
+                    // Create Country Name cell with input
+                    var nameCell = newRow.insertCell(1);
+                    nameCell.innerHTML = '<input type="text" name="new_countryname" form="countryForm">';
+
+                    addUnsavedIndicator(newRow, true);
+                });
+            }
+        });
+
+
+
+    </script>
+{% endblock %}
